@@ -12,8 +12,7 @@ policy_df = pd.read_csv("data/policy_data.csv", index_col=0, parse_dates=True)
 
 # Define the start dates for each presidency
 PRESIDENTIAL_TERMS = {
-    "Obama (2009 - 2012)": ("2009-01-01", "2013-12-01"),
-    "Obama (2013 - 2016)": ("2013-01-01", "2017-12-01"),
+    "Obama (2009 - 2016)": ("2009-01-01", "2017-12-01"),
     "Trump (2017 - 2020)": ("2017-01-01", "2021-12-01"),
     "Biden (2021 - 2024)": ("2021-01-01", "2024-12-01")  # Future date assumed
 }
@@ -67,15 +66,83 @@ def create_cpi_percent_change_number(president):
         return f"{percent_change:.2f}%"
     else:
         return "0.00%"
+    
+def get_global_min_max(indicator_name, dataset="policy"):
+    """
+    Computes the global min and max values across all presidential terms 
+    for consistent chart scaling.
+    """
+    all_data = []
+
+    for president in PRESIDENTIAL_TERMS.keys():
+        start, end = PRESIDENTIAL_TERMS[president]
+        term_data = filter_term_data(start, end, indicator_name, dataset=dataset)
+        all_data.append(term_data)
+
+    combined_series = pd.concat(all_data)
+    return combined_series.min(), combined_series.max()
+
+
+# def create_term_chart(indicator_name, president, dataset="policy"):
+#     """
+#     Creates a line chart for a specific economic indicator for a president's term.
+#     """
+#     start, end = PRESIDENTIAL_TERMS[president]
+#     term_data = filter_term_data(start, end, indicator_name, dataset=dataset)
+#     title = f"{indicator_name} During {president}"
+#     return make_line_chart(term_data, chart_title=title, yaxis_label=indicator_name)
+
+import plotly.graph_objects as go
 
 def create_term_chart(indicator_name, president, dataset="policy"):
     """
-    Creates a line chart for a specific economic indicator for a president's term.
+    Creates a bar chart for yearly totals (like Government Deficit).
+    Creates a line chart for continuous metrics (like CPI).
+    Applies the same Y-axis scale across all charts.
     """
     start, end = PRESIDENTIAL_TERMS[president]
     term_data = filter_term_data(start, end, indicator_name, dataset=dataset)
+
+    # Convert time series to yearly data (for bar charts)
+    term_data_yearly = term_data.resample("YE").sum()
+
+    # Get global min and max for consistent scaling
+    y_min, y_max = get_global_min_max(indicator_name, dataset)
+
     title = f"{indicator_name} During {president}"
-    return make_line_chart(term_data, chart_title=title, yaxis_label=indicator_name)
+
+    # Use a bar chart for indicators like Government Deficit, Spending, MBS
+    if indicator_name in ["Government Deficit", "MBS Total"]:
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=term_data_yearly.index.year,
+            y=term_data_yearly,
+            name=indicator_name
+        ))
+    else:
+        # Use a line chart for other indicators
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=term_data.index,
+            y=term_data,
+            mode="lines",
+            name=indicator_name
+        ))
+
+    # Apply global scaling
+    fig.update_layout(
+        title=title,
+        xaxis_title="Year",
+        yaxis_title=indicator_name,
+        yaxis=dict(range=[y_min, y_max]),  # Fixed scale across all charts
+        margin=dict(l=40, r=40, t=40, b=40),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+
+    return fig
+
+
 
 # Initialize Dash app
 app = DashProxy(__name__, external_stylesheets=[dbc.themes.MORPH], transforms=[ServersideOutputTransform()])
@@ -93,7 +160,7 @@ def create_president_card(president):
                 html.Div(
                     [
                         html.H4(president, className="text-center", style={"color": "#2A2A2A"}),
-                        html.P("Click this card to see data", className="text-center"),
+                        html.P("Review Economic Indicators", className="text-center"),
                     ],
                     id=f"{president}-front",
                     style={"cursor": "pointer"}
@@ -127,11 +194,10 @@ def create_president_card(president):
                         ),
                         html.Hr(),
                         
-                        dcc.Graph(figure=create_term_chart("PPI", president, dataset="inflation")),
                         dcc.Graph(figure=create_term_chart("Unemployment Rate", president, dataset="policy")),
                         dcc.Graph(figure=create_term_chart("Fed Funds Rate", president, dataset="policy")),
                         dcc.Graph(figure=create_term_chart("30-Year Mortgage Rate", president, dataset="policy")),
-                        dcc.Graph(figure=create_term_chart("Government Spending", president, dataset="policy")),
+                        dcc.Graph(figure=create_term_chart("Government Surplus/Deficit", president, dataset="policy")),
                     ]
                 ),
                 id=f"{president}-back",

@@ -10,7 +10,9 @@ POLICY_SERIES = {
     "Fed Funds Rate": "FEDFUNDS",
     "Unemployment Rate": "UNRATE",
     "30-Year Mortgage Rate": "MORTGAGE30US",
-    "Government Spending": "FGEXPND"  # Federal Government Expenditures
+    "Government Surplus/Deficit": "FYFSD",
+    "CPI": "CPIAUCSL",
+    "MBS Total": "MBST",
 }
 
 def fetch_policy_data(series_id, start="2000-01-01"):
