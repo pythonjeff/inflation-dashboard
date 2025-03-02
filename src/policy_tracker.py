@@ -12,7 +12,18 @@ POLICY_SERIES = {
     "30-Year Mortgage Rate": "MORTGAGE30US",
     "Government Surplus/Deficit": "FYFSD",
     "CPI": "CPIAUCSL",
-    "MBS Total": "MBST",
+    "MBS Total": "MBST",    
+    "Gas Price": "GASREGW",
+    "Personal Income": "PI",
+    "Personal Consumption Expenditures": "PCE",
+    "Total GDP": "GDP",
+    "Dow Jones Industrial Average": "DJIA",
+    "S&P 500": "SP500",
+    "10-Year Treasury Yield": "GS10",
+    "3-Month Treasury Yield": "GS3",
+    "10-Year Treasury Constant Maturity Rate": "GS10",
+    "3-Month Treasury Yield": "GS3",
+    "Inflation Rate": "INFLATIONRATE",
 }
 
 def fetch_policy_data(series_id, start="2000-01-01"):
